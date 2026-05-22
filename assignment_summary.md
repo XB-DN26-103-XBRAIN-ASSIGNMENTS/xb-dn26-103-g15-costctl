@@ -64,6 +64,10 @@ Toàn bộ logic xử lý đã được triển khai hoàn chỉnh trong các fi
 - Gọi Cost Explorer API `get_cost_and_usage` với tag filter. Các nhóm chi phí được phân tích theo Service.
 - Chuyển đổi chuỗi Amount thành kiểu số thực `float`, tính toán tổng cộng và hiển thị bảng chi phí đẹp mắt được sắp xếp giảm dần.
 
+**Minh chứng kết quả chạy thực tế của lệnh `cost`:**
+![Báo cáo chi phí qua CLI](cost.png)
+
+
 ### Lệnh `clean`
 - Triển khai bộ tìm kiếm `_find_targets` để lọc ra các EC2 không nằm trong trạng thái terminal (`terminated` hoặc `shutting-down`) và các EBS Volume chỉ ở trạng thái `available` (chưa được gắn vào EC2 nào).
 - Mặc định in ra danh sách dự kiến dọn dẹp (Dry-run). Khi người dùng truyền `--apply`, hệ thống sẽ thực thi xóa hàng loạt song song an toàn.
@@ -84,9 +88,11 @@ Toàn bộ logic xử lý đã được triển khai hoàn chỉnh trong các fi
 ### Kết quả chạy kiểm thử (Local Tests)
 Toàn bộ 25 test cases tích hợp đã chạy thành công mỹ mãn:
 
-```powershell
-pytest -v tests/
-```
+**Hình ảnh kết quả test pass 25/25:**
+![Kết quả test pass 25/25](test-result.png)
+
+**Báo cáo độ bao phủ mã nguồn (Code Coverage):**
+![Báo cáo coverage](test-coverage.png)
 
 **Báo cáo đầu ra chi tiết:**
 ```text
