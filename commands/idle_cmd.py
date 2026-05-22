@@ -55,10 +55,26 @@ import boto3
 from datetime import datetime, timedelta, timezone
 from statistics import mean
 
+from commands._common import tags_to_dict
+
 
 def _avg_cpu(cw, instance_id, hours):
     """Return average CPU% over last N hours, or None if no datapoints."""
-    raise NotImplementedError("TODO: implement _avg_cpu — use get_metric_statistics")
+    end = datetime.now(timezone.utc)
+    start = end - timedelta(hours=hours)
+    resp = cw.get_metric_statistics(
+        Namespace="AWS/EC2",
+        MetricName="CPUUtilization",
+        Dimensions=[{"Name": "InstanceId", "Value": instance_id}],
+        StartTime=start,
+        EndTime=end,
+        Period=3600,
+        Statistics=["Average"],
+    )
+    datapoints = resp.get("Datapoints", [])
+    if not datapoints:
+        return None
+    return mean(dp["Average"] for dp in datapoints)
 
 
 def run(args):
@@ -68,4 +84,47 @@ def run(args):
         args.threshold  — float, default 5.0 (% CPU)
         args.hours      — int, default 24
     """
-    raise NotImplementedError("TODO: implement run() — see module docstring")
+    ec2 = boto3.client("ec2")
+    cw = boto3.client("cloudwatch")
+
+    print(f"Scanning running EC2 (excluding keep=true) — threshold {args.threshold}% over {args.hours}h:")
+    print("-" * 78)
+
+    # Get all running instances
+    paginator = ec2.get_paginator("describe_instances")
+    instances = []
+    for page in paginator.paginate(Filters=[{"Name": "instance-state-name", "Values": ["running"]}]):
+        for res in page["Reservations"]:
+            for inst in res["Instances"]:
+                instances.append(inst)
+
+    idle_list = []
+    for inst in instances:
+        iid = inst["InstanceId"]
+        itype = inst["InstanceType"]
+        tags = tags_to_dict(inst.get("Tags"))
+
+        # Skip instances tagged keep=true
+        if tags.get("keep", "").lower() == "true":
+            continue
+
+        avg = _avg_cpu(cw, iid, args.hours)
+        if avg is None:
+            cpu_str = "NO DATA"
+            marker = ""
+        else:
+            cpu_str = f"{avg:5.2f}%"
+            if avg < args.threshold:
+                marker = " <- IDLE"
+                idle_list.append(iid)
+            else:
+                marker = ""
+        print(f"  {iid:<25s} {itype:<13s} cpu_{args.hours}h={cpu_str}{marker}")
+
+    print("-" * 78)
+    print()
+    if idle_list:
+        print(f"Idle: {len(idle_list)} instance(s): {idle_list}")
+        print("Tip: combo with terminate →  ./costctl.py terminate ec2 --id <id>")
+    else:
+        print("No idle instances found.")

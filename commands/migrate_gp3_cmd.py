@@ -25,7 +25,7 @@ ec2.modify_volume(
     VolumeId=vid,
     VolumeType="gp3",
     Iops=3000,        # baseline included free
-    Throughput=125,   # baseline included free
+    Throughput=125,    # baseline included free
 )
 
 After calling modify_volume, the volume goes through state transitions:
@@ -79,4 +79,60 @@ def run(args):
         args.apply       — bool, default False (dry-run)
         args.volume_id   — optional str, only migrate this volume when --apply
     """
-    raise NotImplementedError("TODO: implement migrate-gp3 — see module docstring")
+    ec2 = boto3.client("ec2")
+    delta = GP2_PRICE - GP3_PRICE
+
+    # Fetch all gp2 volumes
+    volumes = []
+    paginator = ec2.get_paginator("describe_volumes")
+    for page in paginator.paginate(Filters=[{"Name": "volume-type", "Values": ["gp2"]}]):
+        for vol in page["Volumes"]:
+            volumes.append(vol)
+
+    if not volumes:
+        print("No gp2 volumes found. Nothing to migrate.")
+        return
+
+    # If --apply with --volume-id, filter to just that volume
+    if args.apply and args.volume_id:
+        volumes = [v for v in volumes if v["VolumeId"] == args.volume_id]
+        if not volumes:
+            print(f"Volume {args.volume_id} not found or not gp2.")
+            return
+
+    if not args.apply:
+        # Dry-run: list volumes with savings
+        print(f"gp2 volumes (price delta ${delta:.3f}/GB-month):")
+        print("-" * 78)
+        total_savings = 0.0
+        for vol in volumes:
+            vid = vol["VolumeId"]
+            size = vol["Size"]
+            savings = size * delta
+            total_savings += savings
+            # Find attached instance
+            attachments = vol.get("Attachments", [])
+            if attachments:
+                attached = attachments[0].get("InstanceId", "(none)")
+            else:
+                attached = "(none)"
+            print(f"  {vid:<30s} {size:>5d}GB  attached={attached:<20s} ${savings:.2f}/mo savings")
+        print("-" * 78)
+        print(f"\n  Total potential savings: ${total_savings:.2f}/mo")
+        print(f"\n(dry-run — pass --apply --volume-id <id> to migrate one, or --apply to migrate ALL)")
+        return
+
+    # Apply: modify volumes
+    for vol in volumes:
+        vid = vol["VolumeId"]
+        ec2.modify_volume(
+            VolumeId=vid,
+            VolumeType="gp3",
+            Iops=3000,
+            Throughput=125,
+        )
+        print(f"  → modify_volume issued for {vid} (gp3, 3000 IOPS, 125 MiB/s)")
+
+    print()
+    print("Volume(s) entering 'modifying' → 'optimizing' state. App stays online.")
+    print("Use `costctl list volume` after ~30 minutes to confirm 'in-use' + gp3.")
