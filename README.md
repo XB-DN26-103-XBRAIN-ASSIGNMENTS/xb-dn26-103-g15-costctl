@@ -1,13 +1,22 @@
-# costctl — XBrain W6 side challenge starter
+# costctl — XBrain W6 Side Challenge (Group 15)
 
-A starter scaffold for a small AWS-resource-management CLI. **The CLI structure
-is built; you implement the command logic.** Fork this repo, fill in the
-stubs, make the tests pass, customize for your group, then submit.
-
-> **Side challenge is OPTIONAL and does NOT count toward W6 score or bonus cap.**
-> Recognition is separate (Slack callout / Phase 2 selection / portfolio).
-> See `outputs/W6/W6_downtime_exercises.md` in the XBrain program repo for
-> the full brief.
+<p align="left">
+  <a href="assignment_summary.md">
+    <img src="https://img.shields.io/badge/ASSIGNMENT%20SUMMARY-SUMMARY.MD-blue?style=for-the-badge&logo=markdown" alt="Assignment Summary" />
+  </a>
+  <a href="REFLECTIONS.md">
+    <img src="https://img.shields.io/badge/REFLECTIONS-REFLECTIONS.MD-orange?style=for-the-badge&logo=gitbook" alt="Reflections" />
+  </a>
+  <a href="sample_output/">
+    <img src="https://img.shields.io/badge/SAMPLE%20OUTPUT-FOLDER-brightgreen?style=for-the-badge&logo=files" alt="Sample Output" />
+  </a>
+  <a href="tests/">
+    <img src="https://img.shields.io/badge/TESTS-25%20%2F%2025%20PASSING-success?style=for-the-badge&logo=pytest" alt="Tests Status" />
+  </a>
+  <a href="#team">
+    <img src="https://img.shields.io/badge/GROUP-G15-purple?style=for-the-badge&logo=awsorganizations" alt="Group" />
+  </a>
+</p>
 
 ---
 
